@@ -50,23 +50,15 @@ def get_frames(bit_dedup):
     return frames
 
 def b2d(string):
-    e = 0
-    res = 0
-    for c in string:
-        res += int(c)*2**e
-        e += 1
-    return res
+    return sum(int(c)*2**e for e, c in enumerate(string))
 
 def decode_frame(frame):
     if len(frame) < 40:
         return None
 
     chunk_size = 8
-    chunks = int(len(frame)/chunk_size)
-    btes = []
-    for i in range(0, chunks):
-        btes.append(b2d(frame[i*chunk_size:(i+1)*chunk_size]))
-
+    chunks = len(frame) // chunk_size
+    btes = [b2d(frame[i*chunk_size:(i+1)*chunk_size]) for i in range(0, chunks)]
     bf = bus.Frame.from_bytes(btes)
 
     if b2d(frame[40:48]) != bf.checksum():
@@ -86,10 +78,4 @@ for filename in sys.argv[1:]:
         frames = get_frames(dedup)
         for frame in frames:
             print(decode_frame(frame))
-
-        if False:
-            wfile = rfile + ".raw"
-            wf = open(wfile, "w")
-            wf.write(result)
-            wf.close()
 

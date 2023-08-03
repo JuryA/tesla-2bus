@@ -18,7 +18,7 @@ sip_domain = os.environ['SIP_DOMAIN']
 sip_user = os.environ['SIP_USER']
 sip_pass = os.environ['SIP_PASS']
 
-to = callee+"@"+sip_domain
+to = f"{callee}@{sip_domain}"
 
 class Caller(BareSIP):
 
@@ -122,13 +122,13 @@ class BusHandler():
         log.info("2bus handler started")
 
     def frame_callback(self, frame):
-        log.debug("RCVD: %s" % frame)
+        log.debug(f"RCVD: {frame}")
         self.rcvd_frames.append(frame)
     
     def frame_process(self, frame):
-        log.debug("STATUS: %s PROCESS: %s" % (self.status, frame))
+        log.debug(f"STATUS: {self.status} PROCESS: {frame}")
         cmd = frame.cmd.cmd
-    
+
         # call request
         if cmd in [ 10, 24 ]:
             self.remote = frame.src
@@ -159,18 +159,18 @@ class BusHandler():
                 filename = "%s-%d_%d-%d_%d.wav" % (date, frame.src.sn, frame.src.mn, frame.dst.sn, frame.dst.mn)
                 self.recorder.start_recording(filename)
                 self.status = "RECORDING"
-    
+
         # my mp picked-up
         if cmd == 12 and frame.src == my_mp :
             if self.status != "BUS_BUSY":
                 self.sip.end_call()
                 self.status = "BUS_BUSY"
-    
+
         # hangup, cancel
         if cmd in [ 16, 30 ]: 
             self.recorder.stop_recording()
             if frame.dst ==  me:
-                log.info("hangup %s" % (frame.dst))
+                log.info(f"hangup {frame.dst}")
                 f = bus.Frame(me, frame.src, bus.Cmd.from_name("OK"))
                 self.b.send_frame(f)
                 self.sip.end_call()

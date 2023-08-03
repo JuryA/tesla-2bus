@@ -18,8 +18,7 @@ while True:
             if len(message) > 0:
                 filename = "%f.bin" % (time.time())
                 print(filename)
-                f = open(filename, "bw")
-                f.write(message)
-                f.close()
+                with open(filename, "bw") as f:
+                    f.write(message)
                 message = b""
 
