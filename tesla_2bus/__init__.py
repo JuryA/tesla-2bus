@@ -66,16 +66,18 @@ class Cmd:
 
     @classmethod
     def from_name(cls, cmd_name):
-        for cmd_nr in cls.cmd_map:
-            if cmd_name == cls.cmd_map[cmd_nr]:
-                return cls(cmd_nr)
-        return None
+        return next(
+            (
+                cls(cmd_nr)
+                for cmd_nr in cls.cmd_map
+                if cmd_name == cls.cmd_map[cmd_nr]
+            ),
+            None,
+        )
 
 
     def __str__(self):
-        cmd_name = "UNKNOWN"
-        if self.cmd in self.cmd_map:
-            cmd_name = self.cmd_map[self.cmd]
+        cmd_name = self.cmd_map[self.cmd] if self.cmd in self.cmd_map else "UNKNOWN"
         return "%s(%d)" % (cmd_name, self.cmd)
 
 class Frame:
@@ -91,8 +93,7 @@ class Frame:
     def checksum(self):
         bs = self.to_bytes_nocs()
         bsum = sum(bs)
-        cs = (~(bsum % 0x100)+1)&0xff
-        return cs
+        return (~(bsum % 0x100)+1)&0xff
 
     def to_bytes(self):
         bs = self.to_bytes_nocs()
@@ -100,7 +101,7 @@ class Frame:
 
     @classmethod
     def from_bytes(cls, bs):
-        dst = Device.from_bytes(bs[0:2])
+        dst = Device.from_bytes(bs[:2])
         src = Device.from_bytes(bs[2:4])
         cmd = Cmd.from_bytes(bs[4])
         frm = cls(src, dst, cmd)
@@ -150,12 +151,6 @@ class Bus(Thread):
         data = self.pulse_buffer[0]
         self.pulse_buffer = self.pulse_buffer[1:]
         return data
-        if val == 0xff:
-            data = self.port.read(4)
-            #TODO: decode
-            return val
-        else:
-            return val
 
     def byte_from_symbols(self, symbols):
         b = 0
@@ -167,10 +162,7 @@ class Bus(Thread):
 
     def bytes_from_symbols(self, symbols):
         byts = b""
-        unstuff = []
-        for symbol in symbols:
-            if symbol[0] in ["0", "1"]:
-                unstuff.append(symbol)
+        unstuff = [symbol for symbol in symbols if symbol[0] in ["0", "1"]]
         for i in range(0, len(unstuff)//8):
             byts += self.byte_from_symbols(unstuff[8*i:8*(i+1)])
         return byts
